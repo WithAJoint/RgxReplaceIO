@@ -13,7 +13,7 @@ public class ReplaceReader extends FilterReader {
     private char[] buffer;
     private final Pattern pattern;
     private final String replaceWith;
-    private int incompleteRegexMatch;
+    private int incompleteMatchStartIndex;
     private int charsInBuffer;
     private int nextChar;
     private int markedChar;
@@ -32,24 +32,33 @@ public class ReplaceReader extends FilterReader {
         this.replaceWith = replaceWith;
         buffer = new char[bufferSize];
         nextChar = charsInBuffer = 0;
-        incompleteRegexMatch = -1;
+        incompleteMatchStartIndex = -1;
     }
 
     @Override
     public int read() throws IOException {
-        if (nextChar >= charsInBuffer) {
+        if (nextChar >= charsInBuffer || nextChar == incompleteMatchStartIndex) {
             fillBuffer();
             if (nextChar >= charsInBuffer)
                 return -1;
-        } else if (nextChar == incompleteRegexMatch)
-            fillBuffer();
+        }
         return buffer[nextChar++];
     }
 
 
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
-        return super.read(cbuf, off, len);
+        if ((off < 0) || (off > cbuf.length) || (len < 0) ||
+                ((off + len) > cbuf.length) || ((off + len) < 0)) {
+            throw new IndexOutOfBoundsException();
+        } else if (len == 0) {
+            return 0;
+        }
+        if (nextChar >= charsInBuffer) {
+            fillBuffer();
+        }
+        //in progress
+        return 0;
     }
 
     public String readLine() {
@@ -57,22 +66,25 @@ public class ReplaceReader extends FilterReader {
     }
 
     private void fillBuffer() throws IOException {
-        if (incompleteRegexMatch > 0) {
+        if (incompleteMatchStartIndex > 0) {
             reallocateBuffer();
-            charsInBuffer += in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
-            incompleteRegexMatch = -1;
+            int charRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
+            if (charRead != -1)
+                charsInBuffer += charRead;
+            incompleteMatchStartIndex = -1;
         } else
             charsInBuffer = in.read(buffer);
+        nextChar = 0;
         if (charsInBuffer > 0)
             findAndReplace();
-        nextChar = 0;
     }
 
     private void reallocateBuffer() throws IOException {
-        charsInBuffer = buffer.length - incompleteRegexMatch;
+        int incompleteMatchLength = buffer.length - incompleteMatchStartIndex;
         char[] tmpBuffer = new char[buffer.length];
-        System.arraycopy(buffer, incompleteRegexMatch, tmpBuffer, 0, charsInBuffer);
+        System.arraycopy(buffer, incompleteMatchStartIndex, tmpBuffer, 0, incompleteMatchLength);
         buffer = tmpBuffer;
+        charsInBuffer = incompleteMatchLength;
     }
 
     private void findAndReplace() {
@@ -83,18 +95,18 @@ public class ReplaceReader extends FilterReader {
                 throw new IllegalStateException("Regex match too broad, increase buffer size");
             String replacedContent = matcher.replaceAll(matchResult -> {
                 if (matchResult.end() == buffer.length) {
-                    incompleteRegexMatch = matcher.start();
+                    incompleteMatchStartIndex = matcher.start();
                     return matchResult.group();
                 }
                 charsInBuffer += replaceWith.length() - matchResult.group().length();
                 return replaceWith;
             });
-            if (!replacedContent.contentEquals(bufferContent)) {
+            if (!replacedContent.contentEquals(bufferContent) && charsInBuffer > 0) {
                 if (replacedContent.length() > buffer.length)
                     buffer = replacedContent.toCharArray();
                 else {
                     /*
-                     * matcher.replaceAll() for some reasons returns a string long 8191 chars
+                     * For some reasons matcher.replaceAll() returns a string long 8191 chars
                      * instead of 8192 (default buffer size used), these instructions prevent
                      * the buffer from shrinking each time.
                      */

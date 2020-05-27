@@ -22,46 +22,87 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void read_singleCharWithoutReplacement_worksFine() throws IOException {
+    public void readSingleChar_noReplacement_worksFine() throws IOException {
         String expected = "test";
         ReplaceReader reader = initReader(expected);
         int readChar;
 
         readCharByChar(reader);
 
-        assert expected.contentEquals(result);
+        assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void read_singleCharWordReplacement_worksFine() throws IOException {
+    public void readSingleChar_wordReplacement_worksFine() throws IOException {
         String expected = "test test";
         ReplaceReader reader = initReader("test pippo", "pippo", "test");
         int readChar;
 
         readCharByChar(reader);
 
-        assert expected.contentEquals(result);
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readSingleChar_wordReplacementResultBiggerThanBuffer_worksFine() throws IOException {
+        String expected = "abcdefg";
+        ReplaceReader reader = initReader("adefg", "a", "abc", 5);
+
+        readCharByChar(reader);
+
+        assertStringEqualityOutputDifferences(expected);
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void read_regexMatchWholeBuffer_throwsException() throws IOException {
+    public void readSingleChar_regexMatchWholeBuffer_throwsException() throws IOException {
         ReplaceReader reader = initReader("0123456789", "\\d+", "", 5);
 
         readCharByChar(reader);
     }
 
     @Test
-    public void read_regexMatchNeedsBufferFill_worksFine() throws IOException {
+    public void readSingleChar_regexMatchUntilEndOfBuffer_worksFine() throws IOException {
         String expected = "aaaaa";
         ReplaceReader reader = initReader("aaabb" + "bbaa", "b+", "", 5);
 
         readCharByChar(reader);
 
-        assert expected.contentEquals(result);
+        assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void markSupported_returnTrue() {
+    public void readSingleChar_regexMatchUntilEndOfInput_worksFine() throws IOException {
+        String expected = "aaa";
+        ReplaceReader reader = initReader("aaabb", "b+", "");
+
+        readCharByChar(reader);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readSingleChar_regexMatchUntilEndOfBufferEndOfInput_worksFine() throws IOException {
+        String expected = "aaa";
+        ReplaceReader reader = initReader("aaabb", "b+", "", 5);
+
+        readCharByChar(reader);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    public void readBuffer_noReplacement_worksFine() throws IOException{
+        String expected = "test";
+        char[] contentRead = new char[10];
+        ReplaceReader reader = initReader(expected);
+
+        reader.read(contentRead, 0, contentRead.length);
+
+        result.append(contentRead);
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void markSupported_returnsTrue() {
         boolean expected = true;
         ReplaceReader replaceReader = initReader("");
 
@@ -70,11 +111,18 @@ public class ReplaceReaderTest {
         assert result == expected;
     }
 
+    private void assertStringEqualityOutputDifferences(String expected) {
+        assert expected.contentEquals(result) : "expected: " + expected + " result: " + result;
+    }
+
     private void readCharByChar(ReplaceReader reader) throws IOException {
         int readChar;
         while ((readChar = reader.read()) != -1) {
             result.append((char) readChar);
         }
+    }
+
+    private void readBuffer(ReplaceReader reader, char[] buffer, int off, int len) throws IOException {
     }
 
     private ReplaceReader initReader(String source) {
