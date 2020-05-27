@@ -58,7 +58,8 @@ public class ReplaceReader extends FilterReader {
         int maxCharsToRead;
         while (len > 0) {
             maxCharsToRead = Math.min(len, buffer.length);
-            if (nextChar + maxCharsToRead >= charsInBuffer || nextChar + maxCharsToRead >= incompleteMatchStartIndex) {
+            if (nextChar + maxCharsToRead >= charsInBuffer ||
+                    (nextChar + maxCharsToRead >= incompleteMatchStartIndex && incompleteMatchStartIndex != -1)) {
                 fillBuffer();
                 if (charsInBuffer == 0)
                     return -1;

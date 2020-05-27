@@ -87,7 +87,7 @@ public class ReplaceReaderTest {
     @Test
     public void readBuffer_inputLengthEqualToCharactersToRead_worksFine() throws IOException {
         String expected = "test";
-        ReplaceReader reader = initReader(expected, "regex", "");
+        ReplaceReader reader = initReader("pippo", "[a-z]+", "test");
 
         readBuffer(reader, 4);
 
@@ -97,7 +97,7 @@ public class ReplaceReaderTest {
     @Test
     public void readBuffer_inputLengthSmallerThanCharactersToRead_worksFine() throws IOException {
         String expected = "test";
-        ReplaceReader reader = initReader(expected, "regex", "");
+        ReplaceReader reader = initReader("pippo", "[a-z]+", "test");
 
         readBuffer(reader, 20);
 
@@ -106,8 +106,8 @@ public class ReplaceReaderTest {
 
     @Test
     public void readBuffer_charactersToReadBiggerThanReaderBuffer_worksFine() throws IOException {
-        String expected = "0123456789";
-        ReplaceReader reader = initReader(expected, "regex", "", 3);
+        String expected = "testestest";
+        ReplaceReader reader = initReader("00", "\\d+", "testestest", 3);
 
         readBuffer(reader, 10);
 
