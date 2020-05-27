@@ -27,7 +27,8 @@ public class ReplaceReader extends FilterReader {
         super(in);
         if (bufferSize <= 0) {
             throw new IllegalArgumentException("Buffer size <= 0");
-        }
+        } else if (regex.isBlank())
+            throw new IllegalArgumentException("Invalid regex");
         pattern = Pattern.compile(regex);
         this.replaceWith = replaceWith;
         buffer = new char[bufferSize];
@@ -39,12 +40,11 @@ public class ReplaceReader extends FilterReader {
     public int read() throws IOException {
         if (nextChar >= charsInBuffer || nextChar == incompleteMatchStartIndex) {
             fillBuffer();
-            if (nextChar >= charsInBuffer)
+            if (charsInBuffer == 0)
                 return -1;
         }
         return buffer[nextChar++];
     }
-
 
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
@@ -54,11 +54,24 @@ public class ReplaceReader extends FilterReader {
         } else if (len == 0) {
             return 0;
         }
-        if (nextChar >= charsInBuffer) {
-            fillBuffer();
+        int charsRead = 0;
+        int maxCharsToRead;
+        while (len > 0) {
+            maxCharsToRead = Math.min(len, buffer.length);
+            if (nextChar + maxCharsToRead >= charsInBuffer || nextChar + maxCharsToRead >= incompleteMatchStartIndex) {
+                fillBuffer();
+                if (charsInBuffer == 0)
+                    return -1;
+                else if (charsInBuffer != buffer.length) {
+                    maxCharsToRead = charsInBuffer;
+                    len = charsInBuffer;
+                }
+            }
+            System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
+            charsRead += maxCharsToRead;
+            len -= maxCharsToRead;
         }
-        //in progress
-        return 0;
+        return charsRead;
     }
 
     public String readLine() {
@@ -68,15 +81,17 @@ public class ReplaceReader extends FilterReader {
     private void fillBuffer() throws IOException {
         if (incompleteMatchStartIndex > 0) {
             reallocateBuffer();
-            int charRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
-            if (charRead != -1)
-                charsInBuffer += charRead;
+            int charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
+            if (charsRead != -1)
+                charsInBuffer += charsRead;
             incompleteMatchStartIndex = -1;
         } else
             charsInBuffer = in.read(buffer);
         nextChar = 0;
         if (charsInBuffer > 0)
             findAndReplace();
+        else
+            charsInBuffer = 0;
     }
 
     private void reallocateBuffer() throws IOException {
