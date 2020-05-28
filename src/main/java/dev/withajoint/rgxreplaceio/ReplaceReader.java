@@ -84,22 +84,17 @@ public class ReplaceReader extends FilterReader {
         if (incompleteMatchStartIndex > 0) {
             reallocateBuffer();
             incompleteMatchStartIndex = -1;
-        } else if (charsInBuffer == buffer.length || nextChar >= charsInBuffer)
+        } else
             charsInBuffer = 0;
+        nextChar = 0;
         int charsRead = 0;
         while (charsInBuffer < buffer.length && charsRead != -1) {
-            if (charsInBuffer > 0)
-                charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
-            else
-                charsRead = in.read(buffer);
-
+            charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
             if (charsRead != -1)
                 charsInBuffer += charsRead;
-
             if (charsInBuffer > 0)
                 findAndReplace();
         }
-        nextChar = 0;
     }
 
     private void reallocateBuffer() throws IOException {
