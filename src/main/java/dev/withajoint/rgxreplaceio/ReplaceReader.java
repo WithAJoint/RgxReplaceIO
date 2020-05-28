@@ -69,6 +69,7 @@ public class ReplaceReader extends FilterReader {
                 }
             }
             System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
+            nextChar += maxCharsToRead;
             charsRead += maxCharsToRead;
             len -= maxCharsToRead;
         }
@@ -82,17 +83,23 @@ public class ReplaceReader extends FilterReader {
     private void fillBuffer() throws IOException {
         if (incompleteMatchStartIndex > 0) {
             reallocateBuffer();
-            int charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
+            incompleteMatchStartIndex = -1;
+        } else if (charsInBuffer == buffer.length || nextChar >= charsInBuffer)
+            charsInBuffer = 0;
+        int charsRead = 0;
+        while (charsInBuffer < buffer.length && charsRead != -1) {
+            if (charsInBuffer > 0)
+                charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
+            else
+                charsRead = in.read(buffer);
+
             if (charsRead != -1)
                 charsInBuffer += charsRead;
-            incompleteMatchStartIndex = -1;
-        } else
-            charsInBuffer = in.read(buffer);
+
+            if (charsInBuffer > 0)
+                findAndReplace();
+        }
         nextChar = 0;
-        if (charsInBuffer > 0)
-            findAndReplace();
-        else
-            charsInBuffer = 0;
     }
 
     private void reallocateBuffer() throws IOException {

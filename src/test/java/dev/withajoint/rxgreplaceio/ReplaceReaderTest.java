@@ -76,8 +76,8 @@ public class ReplaceReaderTest {
 
     @Test
     public void readSingleChar_regexMatchUntilEndOfBufferEndOfInput_worksFine() throws IOException {
-        String expected = "aaa";
-        ReplaceReader reader = initReader("aaabb", "b+", "", 5);
+        String expected = "aaa" + "ccccc";
+        ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
 
         readCharByChar(reader);
 
