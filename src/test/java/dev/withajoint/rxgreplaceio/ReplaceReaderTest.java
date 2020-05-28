@@ -115,6 +115,16 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void readBuffer_charactersToReadBiggerThanCharactersInBufferWhenMoreInputAvailable_worksFine() throws IOException {
+        String expected = "3456789";
+        ReplaceReader reader = initReader("0123456789", "012", "", 5);
+
+        readBuffer(reader, 10);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
     public void markSupported_returnsTrue() {
         boolean expected = true;
         ReplaceReader replaceReader = initReader("source", "regex", "");
