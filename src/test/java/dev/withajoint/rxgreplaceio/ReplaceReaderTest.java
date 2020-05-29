@@ -74,7 +74,7 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readBuffer_charactersToReadOvercomeContentLength_readUntilContentLength() throws IOException {
+    public void readBuffer_charactersToReadOvercomeInputLength_readUntilContentLength() throws IOException {
         String expected = "test";
         ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
 
@@ -85,7 +85,7 @@ public class ReplaceReaderTest {
 
     @Test
     public void readBuffer_charactersToReadOvercomeBufferSize_readAnyways() throws IOException {
-        String expected = "0123456789";
+        String expected = "123456789";
         ReplaceReader reader = initReader(expected, "uselessForThisTest", "", 3);
 
         readBuffer(reader, expected.length());
@@ -99,7 +99,7 @@ public class ReplaceReaderTest {
         ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
 
         readCharByChar(reader, 4);
-        readBuffer(reader, 25);
+        readBuffer(reader, 22);
 
         assertStringEqualityOutputDifferences(expected);
     }
@@ -110,7 +110,7 @@ public class ReplaceReaderTest {
         ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
 
         readBuffer(reader, 20);
-        readCharByChar(reader, 6);
+        readCharByChar(reader, 7);
 
         assertStringEqualityOutputDifferences(expected);
     }

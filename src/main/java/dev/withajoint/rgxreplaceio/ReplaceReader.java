@@ -65,9 +65,8 @@ public class ReplaceReader extends FilterReader {
                 fillBuffer();
                 if (charsInBuffer == 0)
                     return -1;
-                else if (charsInBuffer != buffer.length) {
+                else if (nextChar + maxCharsToRead > charsInBuffer)
                     maxCharsToRead = len = charsInBuffer - nextChar;
-                }
             }
             System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
             nextChar += maxCharsToRead;
@@ -87,7 +86,8 @@ public class ReplaceReader extends FilterReader {
             incompleteMatchStartIndex = -1;
         } else if (nextChar >= charsInBuffer) {
             charsInBuffer = 0;
-            nextChar = 0;
+            if (charsInBuffer != buffer.length)
+                nextChar = 0;
         }
         int charsRead = 0;
         while (charsInBuffer < buffer.length && charsRead != -1) {
