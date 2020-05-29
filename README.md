@@ -13,8 +13,7 @@ or you can specify the buffer size:
 int bufferSize = 1024;
 ReplaceReader reader = new ReplaceReader(underlyingStream, "regex to be matched", "replacement", bufferSize);
 ```
-Then use it as a normal stream
-
+Then use it as a normal stream while replacements automatically take place underneath.
 ## TODO
 + implement readLine(), mark() and related methods in ReplaceReader
 + develop ReplaceWriter
