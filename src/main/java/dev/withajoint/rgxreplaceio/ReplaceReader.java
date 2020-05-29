@@ -13,6 +13,7 @@ public class ReplaceReader extends FilterReader {
     private char[] buffer;
     private final Pattern pattern;
     private final String replaceWith;
+    private boolean bufferCheckedForReplacement;
     private int incompleteMatchStartIndex;
     private int charsInBuffer;
     private int nextChar;
@@ -34,6 +35,7 @@ public class ReplaceReader extends FilterReader {
         buffer = new char[bufferSize];
         nextChar = charsInBuffer = 0;
         incompleteMatchStartIndex = -1;
+        bufferCheckedForReplacement = false;
     }
 
     @Override
@@ -64,8 +66,7 @@ public class ReplaceReader extends FilterReader {
                 if (charsInBuffer == 0)
                     return -1;
                 else if (charsInBuffer != buffer.length) {
-                    maxCharsToRead = charsInBuffer;
-                    len = charsInBuffer;
+                    maxCharsToRead = len = charsInBuffer - nextChar;
                 }
             }
             System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
@@ -84,15 +85,18 @@ public class ReplaceReader extends FilterReader {
         if (incompleteMatchStartIndex > 0) {
             reallocateBuffer();
             incompleteMatchStartIndex = -1;
-        } else
+        } else if (nextChar >= charsInBuffer) {
             charsInBuffer = 0;
-        nextChar = 0;
+            nextChar = 0;
+        }
         int charsRead = 0;
         while (charsInBuffer < buffer.length && charsRead != -1) {
             charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
-            if (charsRead != -1)
+            if (charsRead != -1) {
                 charsInBuffer += charsRead;
-            if (charsInBuffer > 0)
+                bufferCheckedForReplacement = false;
+            }
+            if (!bufferCheckedForReplacement)
                 findAndReplace();
         }
     }
@@ -103,6 +107,8 @@ public class ReplaceReader extends FilterReader {
         System.arraycopy(buffer, incompleteMatchStartIndex, tmpBuffer, 0, incompleteMatchLength);
         buffer = tmpBuffer;
         charsInBuffer = incompleteMatchLength;
+        nextChar = 0;
+        bufferCheckedForReplacement = false;
     }
 
     private void findAndReplace() {
@@ -135,6 +141,7 @@ public class ReplaceReader extends FilterReader {
                 }
             }
         }
+        bufferCheckedForReplacement = true;
     }
 
     @Override

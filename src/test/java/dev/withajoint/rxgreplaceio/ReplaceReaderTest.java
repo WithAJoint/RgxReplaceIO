@@ -18,7 +18,7 @@ public class ReplaceReaderTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void constructor_bufferSizeLessThanOrEqualTo0_throwsException() {
-        initReader("source", "regex", "",  0);
+        initReader("source", "regex", "", 0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -125,6 +125,17 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void read_allMethodsUsed_worksFine() throws IOException {
+        String expected = "abcdefghijklmnopqrstuvwxyz";
+        ReplaceReader reader = initReader(expected, "\\d+", "");
+
+        readCharByChar(reader, 4);
+        readBuffer(reader, 25);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
     public void markSupported_returnsTrue() {
         boolean expected = true;
         ReplaceReader replaceReader = initReader("source", "regex", "");
@@ -139,10 +150,20 @@ public class ReplaceReaderTest {
     }
 
     private void readCharByChar(ReplaceReader reader) throws IOException {
-        int readChar;
+        //-1 read wihout limit
+        readCharByChar(reader, -1);
+    }
+
+    private void readCharByChar(ReplaceReader reader, int charactersToRead) throws IOException {
+        int readChar, charsRead = 0;
+
         while ((readChar = reader.read()) != -1) {
+            charsRead++;
             result.append((char) readChar);
+            if (charsRead == charactersToRead)
+                break;
         }
+
     }
 
     private void readBuffer(ReplaceReader reader, int charactersToRead) throws IOException {
