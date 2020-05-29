@@ -17,20 +17,19 @@ public class ReplaceReaderTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void constructor_bufferSizeLessThanOrEqualTo0_throwsException() {
+    public void instantiation_bufferSizeLessThanOrEqualTo0_throwException() {
         initReader("source", "regex", "", 0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void readSingleChar_noReplacement_throwsException() throws IOException {
+    public void instantiation_emptyRegex_throwException() throws IOException {
         ReplaceReader reader = initReader("source", "", "");
     }
 
     @Test
-    public void readSingleChar_wordReplacement_worksFine() throws IOException {
+    public void replacement_matchFound_replaceMatch() throws IOException {
         String expected = "test test";
         ReplaceReader reader = initReader("test pippo", "pippo", "test");
-        int readChar;
 
         readCharByChar(reader);
 
@@ -38,7 +37,7 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readSingleChar_wordReplacementResultBiggerThanBuffer_worksFine() throws IOException {
+    public void replacement_replacingExceedBufferLength_replaceAnyways() throws IOException {
         String expected = "abcdefg";
         ReplaceReader reader = initReader("adefg", "a", "abc", 5);
 
@@ -48,14 +47,14 @@ public class ReplaceReaderTest {
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void readSingleChar_regexMatchWholeBuffer_throwsException() throws IOException {
+    public void replacement_regexMatchWholeBuffer_throwException() throws IOException {
         ReplaceReader reader = initReader("0123456789", "\\d+", "", 5);
 
         readCharByChar(reader);
     }
 
     @Test
-    public void readSingleChar_regexMatchUntilEndOfBuffer_worksFine() throws IOException {
+    public void replacement_bufferHoldsPartialMatch_replaceMatch() throws IOException {
         String expected = "aaaaa";
         ReplaceReader reader = initReader("aaabb" + "bbaa", "b+", "", 5);
 
@@ -65,17 +64,7 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readSingleChar_regexMatchUntilEndOfInput_worksFine() throws IOException {
-        String expected = "aaa";
-        ReplaceReader reader = initReader("aaabb", "b+", "");
-
-        readCharByChar(reader);
-
-        assertStringEqualityOutputDifferences(expected);
-    }
-
-    @Test
-    public void readSingleChar_regexMatchUntilEndOfBufferEndOfInput_worksFine() throws IOException {
+    public void replacement_regexMatchUntilEndOfBuffer_replaceMatch() throws IOException {
         String expected = "aaa" + "ccccc";
         ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
 
@@ -85,19 +74,9 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readBuffer_inputLengthEqualToCharactersToRead_worksFine() throws IOException {
+    public void readBuffer_charactersToReadOvercomeContentLength_readUntilContentLength() throws IOException {
         String expected = "test";
-        ReplaceReader reader = initReader("pippo", "[a-z]+", "test");
-
-        readBuffer(reader, 4);
-
-        assertStringEqualityOutputDifferences(expected);
-    }
-
-    @Test
-    public void readBuffer_inputLengthSmallerThanCharactersToRead_worksFine() throws IOException {
-        String expected = "test";
-        ReplaceReader reader = initReader("pippo", "[a-z]+", "test");
+        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
 
         readBuffer(reader, 20);
 
@@ -105,29 +84,19 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readBuffer_charactersToReadBiggerThanReaderBuffer_worksFine() throws IOException {
-        String expected = "testestest";
-        ReplaceReader reader = initReader("00", "\\d+", "testestest", 3);
+    public void readBuffer_charactersToReadOvercomeBufferSize_readAnyways() throws IOException {
+        String expected = "0123456789";
+        ReplaceReader reader = initReader(expected, "uselessForThisTest", "", 3);
 
-        readBuffer(reader, 10);
-
-        assertStringEqualityOutputDifferences(expected);
-    }
-
-    @Test
-    public void readBuffer_charactersToReadBiggerThanCharactersInBufferWhenMoreInputAvailable_worksFine() throws IOException {
-        String expected = "3456789";
-        ReplaceReader reader = initReader("0123456789", "012", "", 5);
-
-        readBuffer(reader, 10);
+        readBuffer(reader, expected.length());
 
         assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void read_allMethodsUsed_worksFine() throws IOException {
+    public void read_readBufferAfterReadingSomeChars_readContent() throws IOException {
         String expected = "abcdefghijklmnopqrstuvwxyz";
-        ReplaceReader reader = initReader(expected, "\\d+", "");
+        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
 
         readCharByChar(reader, 4);
         readBuffer(reader, 25);
@@ -136,7 +105,18 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void markSupported_returnsTrue() {
+    public void read_readSomeCharsAfterReadingBuffer_readContent() throws IOException {
+        String expected = "abcdefghijklmnopqrstuvwxyz";
+        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
+
+        readBuffer(reader, 20);
+        readCharByChar(reader, 6);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void markSupport_returnTrue() {
         boolean expected = true;
         ReplaceReader replaceReader = initReader("source", "regex", "");
 
