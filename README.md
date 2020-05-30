@@ -8,7 +8,7 @@ The library comprises 2 byte streams and 2 character streams (input/output)
 Reader underlyingStream = ...
 ReplaceReader reader = new ReplaceReader(underlyingStream, "regex to be matched", "replacement");
 ```
-or you can specify the buffer size:
+You can also specify buffer size, instead of using the default one:
 ```Java
 int bufferSize = 1024;
 ReplaceReader reader = new ReplaceReader(underlyingStream, "regex to be matched", "replacement", bufferSize);

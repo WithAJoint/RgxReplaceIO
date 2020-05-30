@@ -61,10 +61,12 @@ public class ReplaceReader extends FilterReader {
         while (len > 0) {
             maxCharsToRead = Math.min(len, buffer.length);
             if (nextChar + maxCharsToRead >= charsInBuffer ||
-                    (nextChar + maxCharsToRead >= incompleteMatchStartIndex && incompleteMatchStartIndex != -1)) {
+                    (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead >= incompleteMatchStartIndex)) {
                 fillBuffer();
-                if (charsInBuffer == 0)
+                if (charsInBuffer == 0 && charsRead == 0)
                     return -1;
+                else if (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead > incompleteMatchStartIndex)
+                    maxCharsToRead = incompleteMatchStartIndex - nextChar;
                 else if (nextChar + maxCharsToRead > charsInBuffer)
                     maxCharsToRead = len = charsInBuffer - nextChar;
             }
@@ -126,9 +128,11 @@ public class ReplaceReader extends FilterReader {
                 return replaceWith;
             });
             if (!replacedContent.contentEquals(bufferContent) && charsInBuffer > 0) {
-                if (replacedContent.length() > buffer.length)
+                if (replacedContent.length() > buffer.length) {
+                    if (incompleteMatchStartIndex != -1)
+                        incompleteMatchStartIndex += replacedContent.length() - buffer.length;
                     buffer = replacedContent.toCharArray();
-                else {
+                } else {
                     /*
                      * For some reasons matcher.replaceAll() returns a string long 8191 chars
                      * instead of 8192 (default buffer size used), these instructions prevent

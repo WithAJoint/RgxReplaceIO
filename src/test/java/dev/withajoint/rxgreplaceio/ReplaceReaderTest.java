@@ -64,6 +64,26 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void readBuffer_bufferHoldsPartialMatch_replaceMatch() throws IOException {
+        String expected = "12345";
+        ReplaceReader reader = initReader("123abc45", "[a-z]+", "", 5);
+
+        readBuffer(reader, 5);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readBuffer_bufferKeepsHoldingPartialMatchesGivenLongerReplacement_replaceMatches() throws IOException {
+        String expected = "1236666466665";
+        ReplaceReader reader = initReader("123abc4abcd5", "[a-z]+", "6666", 5);
+
+        readBuffer(reader, 20);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
     public void replacement_regexMatchUntilEndOfBuffer_replaceMatch() throws IOException {
         String expected = "aaa" + "ccccc";
         ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
