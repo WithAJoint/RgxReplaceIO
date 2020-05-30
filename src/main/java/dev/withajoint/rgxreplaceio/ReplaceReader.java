@@ -53,23 +53,18 @@ public class ReplaceReader extends FilterReader {
         if ((off < 0) || (off > cbuf.length) || (len < 0) ||
                 ((off + len) > cbuf.length) || ((off + len) < 0)) {
             throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
-            return 0;
         }
         int charsRead = 0;
         int maxCharsToRead;
         while (len > 0) {
+            fillBuffer();
             maxCharsToRead = Math.min(len, buffer.length);
-            if (nextChar + maxCharsToRead >= charsInBuffer ||
-                    (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead >= incompleteMatchStartIndex)) {
-                fillBuffer();
-                if (charsInBuffer == 0 && charsRead == 0)
-                    return -1;
-                else if (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead > incompleteMatchStartIndex)
-                    maxCharsToRead = incompleteMatchStartIndex - nextChar;
-                else if (nextChar + maxCharsToRead > charsInBuffer)
-                    maxCharsToRead = len = charsInBuffer - nextChar;
-            }
+            if (charsInBuffer == 0 && charsRead == 0)
+                return -1;
+            else if (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead > incompleteMatchStartIndex)
+                maxCharsToRead = incompleteMatchStartIndex - nextChar;
+            else if (nextChar + maxCharsToRead > charsInBuffer)
+                maxCharsToRead = len = charsInBuffer - nextChar;
             System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
             nextChar += maxCharsToRead;
             charsRead += maxCharsToRead;

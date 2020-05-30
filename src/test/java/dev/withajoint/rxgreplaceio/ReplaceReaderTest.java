@@ -54,6 +54,16 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void replacement_regexMatchUntilEndOfBuffer_replaceMatch() throws IOException {
+        String expected = "aaa" + "ccccc";
+        ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
+
+        readCharByChar(reader);
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
     public void replacement_bufferHoldsPartialMatch_replaceMatch() throws IOException {
         String expected = "aaaaa";
         ReplaceReader reader = initReader("aaabb" + "bbaa", "b+", "", 5);
@@ -74,21 +84,11 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readBuffer_bufferKeepsHoldingPartialMatchesGivenLongerReplacement_replaceMatches() throws IOException {
-        String expected = "1236666466665";
-        ReplaceReader reader = initReader("123abc4abcd5", "[a-z]+", "6666", 5);
+    public void readBuffer_longerReplacement_replaceMatches() throws IOException {
+        String expected = "123666674666675";
+        ReplaceReader reader = initReader("123abc4abcd5", "[a-z]+", "66667", 5);
 
-        readBuffer(reader, 20);
-
-        assertStringEqualityOutputDifferences(expected);
-    }
-
-    @Test
-    public void replacement_regexMatchUntilEndOfBuffer_replaceMatch() throws IOException {
-        String expected = "aaa" + "ccccc";
-        ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
-
-        readCharByChar(reader);
+        readBuffer(reader, 50);
 
         assertStringEqualityOutputDifferences(expected);
     }
