@@ -15,6 +15,6 @@ ReplaceReader reader = new ReplaceReader(underlyingStream, "regex to be matched"
 ```
 Then use it as a normal stream while replacements automatically take place underneath.
 ## TODO
-+ implement readLine(), mark() and related methods in ReplaceReader
++ implement readLine(), skip() and ready() in ReplaceReader
 + develop ReplaceWriter
 + develop ReplaceInputStream and ReplaceOutputStream

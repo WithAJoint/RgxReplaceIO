@@ -17,8 +17,6 @@ public class ReplaceReader extends FilterReader {
     private int incompleteMatchStartIndex;
     private int charsInBuffer;
     private int nextChar;
-    private int markedChar;
-    private int readAheadLimit;
 
     public ReplaceReader(Reader in, String regex, String replaceWith) {
         this(in, regex, replaceWith, DEFAULT_BUFFER_SIZE);
@@ -79,12 +77,12 @@ public class ReplaceReader extends FilterReader {
 
     private void fillBuffer() throws IOException {
         if (incompleteMatchStartIndex > 0) {
-            reallocateBuffer();
+            reallocateBuffer(incompleteMatchStartIndex);
             incompleteMatchStartIndex = -1;
+            bufferCheckedForReplacement = false;
         } else if (nextChar >= charsInBuffer) {
             charsInBuffer = 0;
-            if (charsInBuffer != buffer.length)
-                nextChar = 0;
+            nextChar = 0;
         }
         int charsRead = 0;
         while (charsInBuffer < buffer.length && charsRead != -1) {
@@ -98,14 +96,13 @@ public class ReplaceReader extends FilterReader {
         }
     }
 
-    private void reallocateBuffer() throws IOException {
-        int incompleteMatchLength = buffer.length - incompleteMatchStartIndex;
+    private void reallocateBuffer(int startingPoint) throws IOException {
+        int contentToReallocateLength = buffer.length - startingPoint;
         char[] tmpBuffer = new char[buffer.length];
-        System.arraycopy(buffer, incompleteMatchStartIndex, tmpBuffer, 0, incompleteMatchLength);
+        System.arraycopy(buffer, startingPoint, tmpBuffer, 0, contentToReallocateLength);
         buffer = tmpBuffer;
-        charsInBuffer = incompleteMatchLength;
+        charsInBuffer = contentToReallocateLength;
         nextChar = 0;
-        bufferCheckedForReplacement = false;
     }
 
     private void findAndReplace() {
@@ -145,7 +142,22 @@ public class ReplaceReader extends FilterReader {
 
     @Override
     public long skip(long n) throws IOException {
-        return super.skip(n);
+        long skippedCharsCount = 0;
+        long charsToSkip;
+        while (skippedCharsCount < n) {
+            charsToSkip = n - skippedCharsCount;
+            fillBuffer();
+            if (charsInBuffer == 0)
+                break;
+            else if (charsToSkip < charsInBuffer - nextChar) {
+                skippedCharsCount += charsToSkip;
+                nextChar += charsToSkip;
+            } else {
+                skippedCharsCount += charsInBuffer - nextChar;
+                nextChar = charsInBuffer;
+            }
+        }
+        return skippedCharsCount;
     }
 
     @Override
@@ -155,21 +167,21 @@ public class ReplaceReader extends FilterReader {
 
     @Override
     public boolean markSupported() {
-        return true;
+        return false;
     }
 
     @Override
     public void mark(int readAheadLimit) throws IOException {
-        super.mark(readAheadLimit);
+        throw new IOException("mark() not supported");
     }
 
     @Override
     public void reset() throws IOException {
-        super.reset();
+        throw new IOException("reset() not supported");
     }
 
     @Override
     public void close() throws IOException {
-        super.close();
+        in.close();
     }
 }

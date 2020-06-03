@@ -5,6 +5,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 public class ReplaceReaderTest {
@@ -136,8 +137,60 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void markSupport_returnTrue() {
-        boolean expected = true;
+    public void skip_skipSomeChars_contentReadMissesThoseChars() throws IOException {
+        String expected = "abcghi";
+        ReplaceReader reader = initReader("abcdefghi", "uselessForThisTest", "");
+
+        readCharByChar(reader, 3);
+        long skippedCharsCount = reader.skip(3);
+        readCharByChar(reader);
+
+        assert skippedCharsCount == 3;
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void skip_skipMoreCharsThanBufferContains_contentReadMissesThoseChars() throws IOException {
+        String expected = "abcjkl";
+        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "", 3);
+
+        readCharByChar(reader, 3);
+        long skippedCharsCont = reader.skip(6);
+        readCharByChar(reader);
+
+        assert skippedCharsCont == 6;
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void skip_charsSkippedNumberNotMultipleOfBufferSizeButBigger_contentReadMissesThoseChars() throws IOException {
+        String expected = "abckl";
+        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "", 3);
+
+        readCharByChar(reader, 3);
+        long skippedCharsCount = reader.skip(7);
+        readCharByChar(reader);
+
+        assert skippedCharsCount == 7;
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void skip_skipMoreCharsThanInputLength_skippedCharsCountEqualsInputLength() throws IOException {
+        String expected = "abc";
+        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "");
+
+        readCharByChar(reader, 3);
+        long skippedCharsCount = reader.skip(20);
+        readCharByChar(reader);
+
+        assert skippedCharsCount == 9;
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+   @Test
+    public void markSupport_returnFalse() {
+        boolean expected = false;
         ReplaceReader replaceReader = initReader("source", "regex", "");
 
         boolean result = replaceReader.markSupported();
@@ -149,12 +202,12 @@ public class ReplaceReaderTest {
         assert expected.contentEquals(result) : "expected: " + expected + " result: " + result;
     }
 
-    private void readCharByChar(ReplaceReader reader) throws IOException {
+    private void readCharByChar(Reader reader) throws IOException {
         //-1 read wihout limit
         readCharByChar(reader, -1);
     }
 
-    private void readCharByChar(ReplaceReader reader, int charactersToRead) throws IOException {
+    private void readCharByChar(Reader reader, int charactersToRead) throws IOException {
         int readChar, charsRead = 0;
 
         while ((readChar = reader.read()) != -1) {
@@ -166,7 +219,7 @@ public class ReplaceReaderTest {
 
     }
 
-    private void readBuffer(ReplaceReader reader, int charactersToRead) throws IOException {
+    private void readBuffer(Reader reader, int charactersToRead) throws IOException {
         char[] contentRead = new char[charactersToRead];
         int charsRead = reader.read(contentRead, 0, charactersToRead);
         result.append(contentRead, 0, charsRead);
