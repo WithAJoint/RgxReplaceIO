@@ -188,7 +188,28 @@ public class ReplaceReaderTest {
         assertStringEqualityOutputDifferences(expected);
     }
 
-   @Test
+    @Test
+    public void ready_inputEmpty_returnFalse() throws IOException {
+        boolean expected = false;
+        ReplaceReader reader = initReader("", "uselessForThisTest", "");
+
+        boolean result = reader.ready();
+
+        assert result == expected;
+    }
+
+    @Test
+    public void ready_inputNotEmpty_returnTrue() throws IOException {
+        boolean expected = true;
+        ReplaceReader reader = initReader("input", "uselessForThisTest", "");
+
+        boolean result = reader.ready();
+
+        assert result == expected;
+    }
+
+
+    @Test
     public void markSupport_returnFalse() {
         boolean expected = false;
         ReplaceReader replaceReader = initReader("source", "regex", "");

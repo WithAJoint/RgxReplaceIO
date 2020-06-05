@@ -162,7 +162,11 @@ public class ReplaceReader extends FilterReader {
 
     @Override
     public boolean ready() throws IOException {
-        return super.ready();
+        if (charsInBuffer == 0)
+            fillBuffer();
+        if (in.ready() && charsInBuffer != 0)
+            return true;
+        return false;
     }
 
     @Override
