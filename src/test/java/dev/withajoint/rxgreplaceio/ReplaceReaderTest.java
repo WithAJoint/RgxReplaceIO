@@ -75,52 +75,115 @@ public class ReplaceReaderTest {
     }
 
     @Test
-    public void readBuffer_bufferHoldsPartialMatch_replaceMatch() throws IOException {
+    public void readIntoBuffer_bufferHoldsPartialMatch_replaceMatch() throws IOException {
         String expected = "12345";
         ReplaceReader reader = initReader("123abc45", "[a-z]+", "", 5);
 
-        readBuffer(reader, 5);
+        readIntoBuffer(reader, 5);
 
         assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void readBuffer_longerReplacement_replaceMatches() throws IOException {
+    public void readIntoBuffer_longerReplacement_replaceMatches() throws IOException {
         String expected = "123666674666675";
         ReplaceReader reader = initReader("123abc4abcd5", "[a-z]+", "66667", 5);
 
-        readBuffer(reader, 50);
+        readIntoBuffer(reader, 50);
 
         assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void readBuffer_charactersToReadOvercomeInputLength_readUntilContentLength() throws IOException {
+    public void readIntoBuffer_charactersToReadOvercomeInputLength_readUntilContentLength() throws IOException {
         String expected = "test";
-        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
+        ReplaceReader reader = initReader(expected);
 
-        readBuffer(reader, 20);
+        readIntoBuffer(reader, 20);
 
         assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void readBuffer_charactersToReadOvercomeBufferSize_readAnyways() throws IOException {
+    public void readIntoBuffer_charactersToReadOvercomeBufferSize_readAnyways() throws IOException {
         String expected = "123456789";
-        ReplaceReader reader = initReader(expected, "uselessForThisTest", "", 3);
+        ReplaceReader reader = initReader(expected, 3);
 
-        readBuffer(reader, expected.length());
+        readIntoBuffer(reader, expected.length());
 
         assertStringEqualityOutputDifferences(expected);
     }
 
     @Test
-    public void read_readBufferAfterReadingSomeChars_readContent() throws IOException {
+    public void readLine_endOfFileAsDelimiter_readWholeContent() throws IOException {
+        String expected = "12345";
+        ReplaceReader reader = initReader("12345");
+
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_lineFeedAsDelimiter_readFirstLine() throws IOException {
+        String expected = "12345";
+        ReplaceReader reader = initReader("12345\n6789");
+
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_lineFeedAsDelimiter_readSecondLine() throws IOException {
+        String expected = "6789";
+        ReplaceReader reader = initReader("12345\n6789");
+
+        reader.readLine();
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_carriageReturnAsDelimiter_readFirstLine() throws IOException {
+        String expected = "12345";
+        ReplaceReader reader = initReader("12345\r6789");
+
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_carriageReturnAsDelimiter_readSecondLine() throws IOException {
+        String expected = "6789";
+        ReplaceReader reader = initReader("12345\r6789");
+
+        reader.readLine();
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_crlfAsDelimiter_readSecondLine() throws IOException {
+        String expected = "6789";
+        ReplaceReader reader = initReader("12345\r\n6789");
+
+        reader.readLine();
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void read_readIntoBufferAfterReadingSomeChars_readContent() throws IOException {
         String expected = "abcdefghijklmnopqrstuvwxyz";
-        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
+        ReplaceReader reader = initReader(expected);
 
         readCharByChar(reader, 4);
-        readBuffer(reader, 22);
+        readIntoBuffer(reader, 22);
 
         assertStringEqualityOutputDifferences(expected);
     }
@@ -128,9 +191,9 @@ public class ReplaceReaderTest {
     @Test
     public void read_readSomeCharsAfterReadingBuffer_readContent() throws IOException {
         String expected = "abcdefghijklmnopqrstuvwxyz";
-        ReplaceReader reader = initReader(expected, "uselessForThisTest", "");
+        ReplaceReader reader = initReader(expected);
 
-        readBuffer(reader, 20);
+        readIntoBuffer(reader, 20);
         readCharByChar(reader, 7);
 
         assertStringEqualityOutputDifferences(expected);
@@ -139,7 +202,7 @@ public class ReplaceReaderTest {
     @Test
     public void skip_skipSomeChars_contentReadMissesThoseChars() throws IOException {
         String expected = "abcghi";
-        ReplaceReader reader = initReader("abcdefghi", "uselessForThisTest", "");
+        ReplaceReader reader = initReader("abcdefghi");
 
         readCharByChar(reader, 3);
         long skippedCharsCount = reader.skip(3);
@@ -152,7 +215,7 @@ public class ReplaceReaderTest {
     @Test
     public void skip_skipMoreCharsThanBufferContains_contentReadMissesThoseChars() throws IOException {
         String expected = "abcjkl";
-        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "", 3);
+        ReplaceReader reader = initReader("abcdefghijkl", 3);
 
         readCharByChar(reader, 3);
         long skippedCharsCont = reader.skip(6);
@@ -165,7 +228,7 @@ public class ReplaceReaderTest {
     @Test
     public void skip_charsSkippedNumberNotMultipleOfBufferSizeButBigger_contentReadMissesThoseChars() throws IOException {
         String expected = "abckl";
-        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "", 3);
+        ReplaceReader reader = initReader("abcdefghijkl", 3);
 
         readCharByChar(reader, 3);
         long skippedCharsCount = reader.skip(7);
@@ -178,7 +241,7 @@ public class ReplaceReaderTest {
     @Test
     public void skip_skipMoreCharsThanInputLength_skippedCharsCountEqualsInputLength() throws IOException {
         String expected = "abc";
-        ReplaceReader reader = initReader("abcdefghijkl", "uselessForThisTest", "");
+        ReplaceReader reader = initReader("abcdefghijkl");
 
         readCharByChar(reader, 3);
         long skippedCharsCount = reader.skip(20);
@@ -191,7 +254,7 @@ public class ReplaceReaderTest {
     @Test
     public void ready_inputEmpty_returnFalse() throws IOException {
         boolean expected = false;
-        ReplaceReader reader = initReader("", "uselessForThisTest", "");
+        ReplaceReader reader = initReader("");
 
         boolean result = reader.ready();
 
@@ -201,18 +264,17 @@ public class ReplaceReaderTest {
     @Test
     public void ready_inputNotEmpty_returnTrue() throws IOException {
         boolean expected = true;
-        ReplaceReader reader = initReader("input", "uselessForThisTest", "");
+        ReplaceReader reader = initReader("input");
 
         boolean result = reader.ready();
 
         assert result == expected;
     }
 
-
     @Test
     public void markSupport_returnFalse() {
         boolean expected = false;
-        ReplaceReader replaceReader = initReader("source", "regex", "");
+        ReplaceReader replaceReader = initReader("source");
 
         boolean result = replaceReader.markSupported();
 
@@ -240,10 +302,18 @@ public class ReplaceReaderTest {
 
     }
 
-    private void readBuffer(Reader reader, int charactersToRead) throws IOException {
+    private void readIntoBuffer(Reader reader, int charactersToRead) throws IOException {
         char[] contentRead = new char[charactersToRead];
         int charsRead = reader.read(contentRead, 0, charactersToRead);
         result.append(contentRead, 0, charsRead);
+    }
+
+    private ReplaceReader initReader(String source) {
+        return initReader(source, "uselessForThisTest", "");
+    }
+
+    private ReplaceReader initReader(String source, int bufferSize) {
+        return initReader(source, "uselessForThisTest", "", bufferSize);
     }
 
     private ReplaceReader initReader(String source, String regex, String replaceWith) {

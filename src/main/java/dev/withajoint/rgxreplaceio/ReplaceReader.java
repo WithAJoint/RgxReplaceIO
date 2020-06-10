@@ -71,9 +71,33 @@ public class ReplaceReader extends FilterReader {
         return charsRead;
     }
 
-    public String readLine() {
-        return "";
+    public String readLine() throws IOException {
+        StringBuilder line = new StringBuilder();
+        while (!isNextCharLineTerminator()) {
+            line.append(buffer[nextChar]);
+            nextChar++;
+        }
+        return line.toString();
     }
+
+    private boolean isNextCharLineTerminator() throws IOException {
+        if (nextChar >= charsInBuffer) {
+            fillBuffer();
+            if (charsInBuffer == 0)
+                return true;
+        }
+        if (buffer[nextChar] == '\n') {
+            nextChar++;
+            return true;
+        } else if (buffer[nextChar] == '\r') {
+            nextChar++;
+            if (buffer[nextChar] == '\n')
+                nextChar++;
+            return true;
+        }
+        return false;
+    }
+
 
     private void fillBuffer() throws IOException {
         if (incompleteMatchStartIndex > 0) {
