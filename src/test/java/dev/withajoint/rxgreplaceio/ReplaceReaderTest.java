@@ -178,6 +178,26 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void readLine_lineBiggerThanBufferSize_readAnyways() throws IOException {
+        String expected = "abcdefgh";
+        ReplaceReader reader = initReader("abcdefgh", 3);
+
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_lineContainsIncompleteMatch_readReplacedContent() throws IOException {
+        String expected = "abcde";
+        ReplaceReader reader = initReader("abc0001de\nfgh", "\\d+", "", 5);
+
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
     public void read_readIntoBufferAfterReadingSomeChars_readContent() throws IOException {
         String expected = "abcdefghijklmnopqrstuvwxyz";
         ReplaceReader reader = initReader(expected);
@@ -292,14 +312,12 @@ public class ReplaceReaderTest {
 
     private void readCharByChar(Reader reader, int charactersToRead) throws IOException {
         int readChar, charsRead = 0;
-
         while ((readChar = reader.read()) != -1) {
             charsRead++;
             result.append((char) readChar);
             if (charsRead == charactersToRead)
                 break;
         }
-
     }
 
     private void readIntoBuffer(Reader reader, int charactersToRead) throws IOException {

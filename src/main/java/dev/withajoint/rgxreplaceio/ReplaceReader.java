@@ -53,20 +53,20 @@ public class ReplaceReader extends FilterReader {
             throw new IndexOutOfBoundsException();
         }
         int charsRead = 0;
-        int maxCharsToRead;
+        int charsToRead;
         while (len > 0) {
             fillBuffer();
-            maxCharsToRead = Math.min(len, buffer.length);
+            charsToRead = Math.min(len, buffer.length);
             if (charsInBuffer == 0 && charsRead == 0)
                 return -1;
-            else if (incompleteMatchStartIndex != -1 && nextChar + maxCharsToRead > incompleteMatchStartIndex)
-                maxCharsToRead = incompleteMatchStartIndex - nextChar;
-            else if (nextChar + maxCharsToRead > charsInBuffer)
-                maxCharsToRead = len = charsInBuffer - nextChar;
-            System.arraycopy(buffer, nextChar, cbuf, off + charsRead, maxCharsToRead);
-            nextChar += maxCharsToRead;
-            charsRead += maxCharsToRead;
-            len -= maxCharsToRead;
+            else if (incompleteMatchStartIndex != -1 && nextChar + charsToRead > incompleteMatchStartIndex)
+                charsToRead = incompleteMatchStartIndex - nextChar;
+            else if (nextChar + charsToRead > charsInBuffer)
+                charsToRead = len = charsInBuffer - nextChar;
+            System.arraycopy(buffer, nextChar, cbuf, off + charsRead, charsToRead);
+            nextChar += charsToRead;
+            charsRead += charsToRead;
+            len -= charsToRead;
         }
         return charsRead;
     }
@@ -81,7 +81,7 @@ public class ReplaceReader extends FilterReader {
     }
 
     private boolean isNextCharLineTerminator() throws IOException {
-        if (nextChar >= charsInBuffer) {
+        if (nextChar >= charsInBuffer || nextChar == incompleteMatchStartIndex) {
             fillBuffer();
             if (charsInBuffer == 0)
                 return true;
@@ -98,10 +98,10 @@ public class ReplaceReader extends FilterReader {
         return false;
     }
 
-
     private void fillBuffer() throws IOException {
         if (incompleteMatchStartIndex > 0) {
             reallocateBuffer(incompleteMatchStartIndex);
+            nextChar = 0;
             incompleteMatchStartIndex = -1;
             bufferCheckedForReplacement = false;
         } else if (nextChar >= charsInBuffer) {
@@ -126,7 +126,6 @@ public class ReplaceReader extends FilterReader {
         System.arraycopy(buffer, startingPoint, tmpBuffer, 0, contentToReallocateLength);
         buffer = tmpBuffer;
         charsInBuffer = contentToReallocateLength;
-        nextChar = 0;
     }
 
     private void findAndReplace() {
