@@ -77,6 +77,8 @@ public class ReplaceReader extends FilterReader {
             line.append(buffer[nextChar]);
             nextChar++;
         }
+        if (charsInBuffer == 0 && line.length() == 0)
+            return null;
         return line.toString();
     }
 
@@ -120,7 +122,7 @@ public class ReplaceReader extends FilterReader {
         }
     }
 
-    private void reallocateBuffer(int startingPoint) throws IOException {
+    private void reallocateBuffer(int startingPoint) {
         int contentToReallocateLength = buffer.length - startingPoint;
         char[] tmpBuffer = new char[buffer.length];
         System.arraycopy(buffer, startingPoint, tmpBuffer, 0, contentToReallocateLength);
@@ -151,7 +153,7 @@ public class ReplaceReader extends FilterReader {
                     /*
                      * For some reasons matcher.replaceAll() returns a string long 8191 chars
                      * instead of 8192 (default buffer size used), these instructions prevent
-                     * the buffer from shrinking each time.
+                     * the buffer from shrinking every time.
                      */
                     char[] tmpBuffer = new char[buffer.length];
                     char[] newContent = replacedContent.toCharArray();
@@ -187,9 +189,7 @@ public class ReplaceReader extends FilterReader {
     public boolean ready() throws IOException {
         if (charsInBuffer == 0)
             fillBuffer();
-        if (in.ready() && charsInBuffer != 0)
-            return true;
-        return false;
+        return in.ready() && charsInBuffer != 0;
     }
 
     @Override

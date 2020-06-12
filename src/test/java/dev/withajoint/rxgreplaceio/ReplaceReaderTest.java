@@ -115,6 +115,16 @@ public class ReplaceReaderTest {
     }
 
     @Test
+    public void readLine_noCharsToRead_returnNull() throws IOException {
+        String expected = null;
+        ReplaceReader reader = initReader("");
+
+        String result = reader.readLine();
+
+        assert expected == result;
+    }
+
+    @Test
     public void readLine_endOfFileAsDelimiter_readWholeContent() throws IOException {
         String expected = "12345";
         ReplaceReader reader = initReader("12345");
@@ -170,6 +180,17 @@ public class ReplaceReaderTest {
     public void readLine_crlfAsDelimiter_readSecondLine() throws IOException {
         String expected = "6789";
         ReplaceReader reader = initReader("12345\r\n6789");
+
+        reader.readLine();
+        result.append(reader.readLine());
+
+        assertStringEqualityOutputDifferences(expected);
+    }
+
+    @Test
+    public void readLine_lineWithoutChars_returnEmptyString() throws IOException {
+        String expected = "";
+        ReplaceReader reader = initReader("12\n\n345");
 
         reader.readLine();
         result.append(reader.readLine());
