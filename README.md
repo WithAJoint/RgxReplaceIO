@@ -14,7 +14,9 @@ int bufferSize = 1024;
 ReplaceReader reader = new ReplaceReader(underlyingStream, "regex to be matched", "replacement", bufferSize);
 ```
 Then use it as a normal stream while replacements automatically take place underneath.
+
+### Warning
+Those streams are not thread-safe at all! Do not read any stream from more than one thread.
 ## TODO
-+ implement readLine() and Thread safety in ReplaceReader
 + develop ReplaceWriter
 + develop ReplaceInputStream and ReplaceOutputStream
