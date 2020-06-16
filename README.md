@@ -17,6 +17,7 @@ Then use it as a normal stream while replacements automatically take place under
 
 ### Warning
 Those streams are not thread-safe at all! Do not read any stream from more than one thread.
+
 ## TODO
 + develop ReplaceWriter
 + develop ReplaceInputStream and ReplaceOutputStream

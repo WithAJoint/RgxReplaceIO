@@ -3,20 +3,17 @@ package dev.withajoint.rgxreplaceio;
 import java.io.FilterReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ReplaceReader extends FilterReader {
 
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private char[] buffer;
-    private final Pattern pattern;
-    private final String replaceWith;
     private boolean bufferCheckedForReplacement;
     private int incompleteMatchStartIndex;
     private int charsInBuffer;
     private int nextChar;
+    private final BufferContentReplacer contentReplacer;
 
     public ReplaceReader(Reader in, String regex, String replaceWith) {
         this(in, regex, replaceWith, DEFAULT_BUFFER_SIZE);
@@ -26,11 +23,9 @@ public class ReplaceReader extends FilterReader {
         super(in);
         if (bufferSize <= 0) {
             throw new IllegalArgumentException("Buffer size <= 0");
-        } else if (regex.isBlank())
-            throw new IllegalArgumentException("Invalid regex");
-        pattern = Pattern.compile(regex);
-        this.replaceWith = replaceWith;
+        }
         buffer = new char[bufferSize];
+        contentReplacer = new BufferContentReplacer(regex, replaceWith);
         nextChar = charsInBuffer = 0;
         incompleteMatchStartIndex = -1;
         bufferCheckedForReplacement = false;
@@ -131,37 +126,10 @@ public class ReplaceReader extends FilterReader {
     }
 
     private void findAndReplace() {
-        String bufferContent = String.valueOf(buffer);
-        Matcher matcher = pattern.matcher(bufferContent);
-        if (matcher.find()) {
-            if (matcher.end() == buffer.length && matcher.start() == 0)
-                throw new IllegalStateException("Regex match too broad, increase buffer size");
-            String replacedContent = matcher.replaceAll(matchResult -> {
-                if (matchResult.end() == buffer.length) {
-                    incompleteMatchStartIndex = matcher.start();
-                    return matchResult.group();
-                }
-                charsInBuffer += replaceWith.length() - matchResult.group().length();
-                return replaceWith;
-            });
-            if (!replacedContent.contentEquals(bufferContent) && charsInBuffer > 0) {
-                if (replacedContent.length() > buffer.length) {
-                    if (incompleteMatchStartIndex != -1)
-                        incompleteMatchStartIndex += replacedContent.length() - buffer.length;
-                    buffer = replacedContent.toCharArray();
-                } else {
-                    /*
-                     * For some reasons matcher.replaceAll() returns a string long 8191 chars
-                     * instead of 8192 (default buffer size used), these instructions prevent
-                     * the buffer from shrinking every time.
-                     */
-                    char[] tmpBuffer = new char[buffer.length];
-                    char[] newContent = replacedContent.toCharArray();
-                    System.arraycopy(newContent, 0, tmpBuffer, 0, newContent.length);
-                    buffer = tmpBuffer;
-                }
-            }
-        }
+        buffer = contentReplacer.replaceMatchesIfAny(buffer, charsInBuffer);
+        charsInBuffer = contentReplacer.getCharsAfterReplacement();
+        if (contentReplacer.isLastMatchIncomplete())
+            incompleteMatchStartIndex = contentReplacer.getIncompleteMatchStartIndex();
         bufferCheckedForReplacement = true;
     }
 
