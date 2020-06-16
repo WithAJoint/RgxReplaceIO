@@ -25,7 +25,7 @@ public class ReplaceReader extends FilterReader {
             throw new IllegalArgumentException("Buffer size <= 0");
         }
         buffer = new char[bufferSize];
-        contentReplacer = new BufferContentReplacer(regex, replaceWith);
+        contentReplacer = new BufferContentReplacer(regex, replaceWith, bufferSize);
         nextChar = charsInBuffer = 0;
         incompleteMatchStartIndex = -1;
         bufferCheckedForReplacement = false;
