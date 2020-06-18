@@ -24,30 +24,35 @@ class BufferContentReplacer {
 
     char[] replaceMatchesIfAny(final char[] buffer, final int charsInBuffer) {
         resetReplacer(buffer, charsInBuffer);
-        if (matcher.find()) {
-            if (isWholeBufferMatching())
-                throw new IllegalStateException("Regex match too broad, increase buffer size");
-            String replacedContent = replaceContent();
-            if (isReplacementValid(replacedContent)) {
-                return replaceBuffer(replacedContent);
-            }
+        if (isMatchingValid()) {
+            replaceContent();
+            return adjustContentInBuffer();
         }
         return buffer;
     }
 
-    private void resetReplacer(char[] buffer, int charsInBuffer) {
+    private void resetReplacer(final char[] buffer, final int charsInBuffer) {
         bufferContent = String.valueOf(buffer, 0, charsInBuffer);
         matcher = pattern.matcher(bufferContent);
         charsAfterReplacement = charsInBuffer;
         incompleteMatchStartIndex = -1;
     }
 
+    private boolean isMatchingValid() {
+        if (matcher.find()) {
+            if (isWholeBufferMatching())
+                throw new IllegalStateException("Regex match too broad, increase buffer size");
+            return true;
+        }
+        return false;
+    }
+
     private boolean isWholeBufferMatching() {
         return matcher.end() == bufferSize && matcher.start() == 0;
     }
 
-    private String replaceContent() {
-        return matcher.replaceAll(matchResult -> {
+    private void replaceContent() {
+        bufferContent = matcher.replaceAll(matchResult -> {
             if (matchResult.end() == bufferSize) {
                 incompleteMatchStartIndex = matcher.start();
                 return matchResult.group();
@@ -57,26 +62,22 @@ class BufferContentReplacer {
         });
     }
 
-    private boolean isReplacementValid(String replacedContent) {
-        return !replacedContent.contentEquals(bufferContent) && charsAfterReplacement > 0;
-    }
-
-    private char[] replaceBuffer(String replacedContent) {
-        char[] bufferAfterReplacement;
-        if (replacedContent.length() > bufferSize) {
-            bufferAfterReplacement = swapLongerContentInBuffer(replacedContent);
+    private char[] adjustContentInBuffer() {
+        char[] bufferReplaced;
+        if (bufferContent.length() > bufferSize) {
+            bufferReplaced = putLongerContentInBuffer();
         } else {
-            bufferAfterReplacement = swapContentInBuffer(replacedContent);
+            bufferReplaced = putContentInBuffer();
         }
-        return bufferAfterReplacement;
+        return bufferReplaced;
     }
 
-    private char[] swapLongerContentInBuffer(String replacedContent) {
+    private char[] putLongerContentInBuffer() {
         if (incompleteMatchStartIndex != -1)
-            incompleteMatchStartIndex += replacedContent.length() - bufferSize;
-        char[] bufferAfterReplacement = replacedContent.toCharArray();
-        bufferSize = bufferAfterReplacement.length;
-        return bufferAfterReplacement;
+            incompleteMatchStartIndex += bufferContent.length() - bufferSize;
+        char[] bufferReplaced = bufferContent.toCharArray();
+        bufferSize = bufferReplaced.length;
+        return bufferReplaced;
     }
 
     /*
@@ -84,13 +85,13 @@ class BufferContentReplacer {
      * instead of 8192 (default buffer size used), these instructions prevent
      * the buffer from shrinking every time.
      * Otherwise replacedContent.toCharArray() could be used in any case and
-     * swapLongerContent() alone would do the job.
+     * swapLongerContentInBuffer() alone would do the job.
      */
-    private char[] swapContentInBuffer(String replacedContent) {
-        char[] tmpBuffer = new char[bufferSize];
-        char[] newContent = replacedContent.toCharArray();
-        System.arraycopy(newContent, 0, tmpBuffer, 0, newContent.length);
-        return tmpBuffer;
+    private char[] putContentInBuffer() {
+        char[] bufferReplaced = new char[bufferSize];
+        char[] tmpBuffer = bufferContent.toCharArray();
+        System.arraycopy(tmpBuffer, 0, bufferReplaced, 0, tmpBuffer.length);
+        return bufferReplaced;
     }
 
     int getCharsAfterReplacement() {

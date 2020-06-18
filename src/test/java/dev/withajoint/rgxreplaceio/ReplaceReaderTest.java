@@ -1,7 +1,5 @@
-package dev.withajoint.rxgreplaceio;
+package dev.withajoint.rgxreplaceio;
 
-import dev.withajoint.rgxreplaceio.ReplaceReader;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -14,11 +12,6 @@ public class ReplaceReaderTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void instantiation_bufferSizeLessThanOrEqualTo0_throwException() {
         initReader("source", "regex", "", 0);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void instantiation_emptyRegex_throwException() throws IOException {
-        ReplaceReader reader = initReader("source", "", "");
     }
 
     @Test

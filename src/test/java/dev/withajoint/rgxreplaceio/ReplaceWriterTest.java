@@ -1,7 +1,4 @@
-package dev.withajoint.rxgreplaceio;
-
-import dev.withajoint.rgxreplaceio.ReplaceWriter;
-import org.testng.annotations.Test;
+package dev.withajoint.rgxreplaceio;
 
 import java.io.IOException;
 import java.io.StringWriter;
