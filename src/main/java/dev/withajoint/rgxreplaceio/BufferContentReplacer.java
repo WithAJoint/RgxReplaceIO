@@ -13,26 +13,26 @@ class BufferContentReplacer {
     private int incompleteMatchStartIndex;
     private int charsAfterReplacement;
 
-    BufferContentReplacer(String regex, String replaceWith, int bufferSize) {
+    BufferContentReplacer(String regex, String replaceWith) {
         if (regex.isBlank())
             throw new IllegalArgumentException("Invalid regex");
         this.replaceWith = replaceWith;
-        this.bufferSize = bufferSize;
         pattern = Pattern.compile(regex);
         incompleteMatchStartIndex = -1;
     }
 
-    char[] replaceMatchesIfAny(final char[] buffer, final int charsInBuffer) {
+    char[] replaceMatchesIfAny(char[] buffer, final int charsInBuffer) {
         resetReplacer(buffer, charsInBuffer);
         if (isMatchingValid()) {
             replaceContent();
-            return adjustContentInBuffer();
+            buffer = adjustContentInBuffer();
         }
         return buffer;
     }
 
     private void resetReplacer(final char[] buffer, final int charsInBuffer) {
         bufferContent = String.valueOf(buffer, 0, charsInBuffer);
+        bufferSize = buffer.length;
         matcher = pattern.matcher(bufferContent);
         charsAfterReplacement = charsInBuffer;
         incompleteMatchStartIndex = -1;
@@ -63,30 +63,15 @@ class BufferContentReplacer {
     }
 
     private char[] adjustContentInBuffer() {
-        char[] bufferReplaced;
-        if (bufferContent.length() > bufferSize) {
-            bufferReplaced = putLongerContentInBuffer();
-        } else {
-            bufferReplaced = putContentInBuffer();
-        }
-        return bufferReplaced;
+        return bufferContent.length() > bufferSize ? putLongerContentInBuffer() : putContentInBuffer();
     }
 
     private char[] putLongerContentInBuffer() {
         if (incompleteMatchStartIndex != -1)
             incompleteMatchStartIndex += bufferContent.length() - bufferSize;
-        char[] bufferReplaced = bufferContent.toCharArray();
-        bufferSize = bufferReplaced.length;
-        return bufferReplaced;
+        return bufferContent.toCharArray();
     }
 
-    /*
-     * For some reasons matcher.replaceAll() returns a string long 8191 chars
-     * instead of 8192 (default buffer size used), these instructions prevent
-     * the buffer from shrinking every time.
-     * Otherwise replacedContent.toCharArray() could be used in any case and
-     * swapLongerContentInBuffer() alone would do the job.
-     */
     private char[] putContentInBuffer() {
         char[] bufferReplaced = new char[bufferSize];
         char[] tmpBuffer = bufferContent.toCharArray();

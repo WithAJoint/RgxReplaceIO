@@ -25,7 +25,7 @@ public class ReplaceReader extends FilterReader {
             throw new IllegalArgumentException("Buffer size <= 0");
         }
         buffer = new char[bufferSize];
-        contentReplacer = new BufferContentReplacer(regex, replaceWith, bufferSize);
+        contentReplacer = new BufferContentReplacer(regex, replaceWith);
         nextChar = charsInBuffer = 0;
         incompleteMatchStartIndex = -1;
         bufferCheckedForReplacement = false;
@@ -113,7 +113,7 @@ public class ReplaceReader extends FilterReader {
                 bufferCheckedForReplacement = false;
             }
             if (!bufferCheckedForReplacement)
-                findAndReplace();
+                replaceMatchingContent();
         }
     }
 
@@ -125,7 +125,7 @@ public class ReplaceReader extends FilterReader {
         charsInBuffer = contentToReallocateLength;
     }
 
-    private void findAndReplace() {
+    private void replaceMatchingContent() {
         buffer = contentReplacer.replaceMatchesIfAny(buffer, charsInBuffer);
         charsInBuffer = contentReplacer.getCharsAfterReplacement();
         if (contentReplacer.isLastMatchIncomplete())
