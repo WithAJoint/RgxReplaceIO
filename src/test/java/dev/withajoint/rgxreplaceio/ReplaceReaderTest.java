@@ -11,52 +11,29 @@ public class ReplaceReaderTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void instantiation_bufferSizeLessThanOrEqualTo0_throwException() {
-        initReader("source", "regex", "", 0);
-    }
-
-
-    @Test
-    public void replacement_matchFound_replaceMatch() throws IOException {
-        String expected = "test test";
-        StringBuilder result = new StringBuilder();
-        ReplaceReader reader = initReader("test pippo", "pippo", "test");
-
-        readCharByChar(reader, result);
-
-        assertStringEqualityOutputDifferences(expected, result.toString());
+        initReader("source", 0);
     }
 
     @Test
-    public void replacement_replacingExceedBufferLength_replaceAnyways() throws IOException {
-        String expected = "abcdefg";
+    public void read_wholeContentInsideBuffer_readAllChars() throws IOException {
+        String sourceContent = "abcde";
         StringBuilder result = new StringBuilder();
-        ReplaceReader reader = initReader("adefg", "a", "abc", 5);
+        ReplaceReader reader = initReader(sourceContent);
 
         readCharByChar(reader, result);
 
-        assertStringEqualityOutputDifferences(expected, result.toString());
+        assertStringEqualityOutputDifferences(sourceContent, result.toString());
     }
 
     @Test
-    public void replacement_regexMatchUntilEndOfBuffer_replaceMatch() throws IOException {
-        String expected = "aaa" + "ccccc";
+    public void read_contentLongerThanBufferSize_readAllChars() throws IOException {
+        String sourceContent = "abcdefgh";
         StringBuilder result = new StringBuilder();
-        ReplaceReader reader = initReader("aaabb", "b+", "ccccc", 5);
+        ReplaceReader reader = initReader(sourceContent, 5);
 
         readCharByChar(reader, result);
 
-        assertStringEqualityOutputDifferences(expected, result.toString());
-    }
-
-    @Test
-    public void replacement_bufferHoldsPartialMatch_replaceMatch() throws IOException {
-        String expected = "aaaaa";
-        StringBuilder result = new StringBuilder();
-        ReplaceReader reader = initReader("aaabb" + "bbaa", "b+", "", 5);
-
-        readCharByChar(reader, result);
-
-        assertStringEqualityOutputDifferences(expected, result.toString());
+        assertStringEqualityOutputDifferences(sourceContent, result.toString());
     }
 
     @Test
@@ -67,6 +44,17 @@ public class ReplaceReaderTest {
         int charsRead = reader.read(readHere, 0, readHere.length);
 
         assert charsRead == -1;
+    }
+
+    @Test
+    public void readIntoBuffer_inputCharsEqualBufferSize_readAllChars() throws IOException {
+        String sourceContent = "abcde";
+        StringBuilder result = new StringBuilder();
+        ReplaceReader reader = initReader(sourceContent, 5);
+
+        readIntoBuffer(reader, 10, result);
+
+        assertStringEqualityOutputDifferences(sourceContent, result.toString());
     }
 
     @Test
@@ -126,12 +114,11 @@ public class ReplaceReaderTest {
 
     @Test
     public void readLine_noCharsToRead_returnNull() throws IOException {
-        String expected = null;
         ReplaceReader reader = initReader("");
 
         String result = reader.readLine();
 
-        assert expected == result;
+        assert result == null;
     }
 
     @Test
@@ -319,32 +306,29 @@ public class ReplaceReaderTest {
 
     @Test
     public void ready_inputEmpty_returnFalse() throws IOException {
-        boolean expected = false;
         ReplaceReader reader = initReader("");
 
         boolean result = reader.ready();
 
-        assert result == expected;
+        assert !result;
     }
 
     @Test
     public void ready_inputNotEmpty_returnTrue() throws IOException {
-        boolean expected = true;
         ReplaceReader reader = initReader("input");
 
         boolean result = reader.ready();
 
-        assert result == expected;
+        assert result;
     }
 
     @Test
     public void markSupport_returnFalse() {
-        boolean expected = false;
         ReplaceReader replaceReader = initReader("source");
 
         boolean result = replaceReader.markSupported();
 
-        assert result == expected;
+        assert !result;
     }
 
     private void assertStringEqualityOutputDifferences(String expected, String result) {

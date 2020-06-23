@@ -41,6 +41,44 @@ public class ReplaceReader extends FilterReader {
         return buffer[nextChar++];
     }
 
+    private void fillBuffer() throws IOException {
+        if (incompleteMatchStartIndex > 0) {
+            reallocateBuffer(incompleteMatchStartIndex);
+            nextChar = 0;
+            incompleteMatchStartIndex = -1;
+            bufferCheckedForReplacement = false;
+        } else if (nextChar >= charsInBuffer) {
+            charsInBuffer = 0;
+            nextChar = 0;
+        }
+        int charsRead = 0;
+        while (charsInBuffer < buffer.length && charsRead != -1) {
+            charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
+            if (charsRead != -1) {
+                charsInBuffer += charsRead;
+                bufferCheckedForReplacement = false;
+            }
+            if (!bufferCheckedForReplacement)
+                replaceMatchingContent();
+        }
+    }
+
+    private void reallocateBuffer(int startingPoint) {
+        int contentToReallocateLength = buffer.length - startingPoint;
+        char[] tmpBuffer = new char[buffer.length];
+        System.arraycopy(buffer, startingPoint, tmpBuffer, 0, contentToReallocateLength);
+        buffer = tmpBuffer;
+        charsInBuffer = contentToReallocateLength;
+    }
+
+    private void replaceMatchingContent() {
+        buffer = contentReplacer.replaceMatchesIfAny(buffer, charsInBuffer);
+        charsInBuffer = contentReplacer.getCharsAfterReplacement();
+        if (contentReplacer.isLastMatchIncomplete())
+            incompleteMatchStartIndex = contentReplacer.getIncompleteMatchStartIndex();
+        bufferCheckedForReplacement = true;
+    }
+
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
         if ((off < 0) || (off > cbuf.length) || (len < 0) ||
@@ -93,44 +131,6 @@ public class ReplaceReader extends FilterReader {
             return true;
         }
         return false;
-    }
-
-    private void fillBuffer() throws IOException {
-        if (incompleteMatchStartIndex > 0) {
-            reallocateBuffer(incompleteMatchStartIndex);
-            nextChar = 0;
-            incompleteMatchStartIndex = -1;
-            bufferCheckedForReplacement = false;
-        } else if (nextChar >= charsInBuffer) {
-            charsInBuffer = 0;
-            nextChar = 0;
-        }
-        int charsRead = 0;
-        while (charsInBuffer < buffer.length && charsRead != -1) {
-            charsRead = in.read(buffer, charsInBuffer, buffer.length - charsInBuffer);
-            if (charsRead != -1) {
-                charsInBuffer += charsRead;
-                bufferCheckedForReplacement = false;
-            }
-            if (!bufferCheckedForReplacement)
-                replaceMatchingContent();
-        }
-    }
-
-    private void reallocateBuffer(int startingPoint) {
-        int contentToReallocateLength = buffer.length - startingPoint;
-        char[] tmpBuffer = new char[buffer.length];
-        System.arraycopy(buffer, startingPoint, tmpBuffer, 0, contentToReallocateLength);
-        buffer = tmpBuffer;
-        charsInBuffer = contentToReallocateLength;
-    }
-
-    private void replaceMatchingContent() {
-        buffer = contentReplacer.replaceMatchesIfAny(buffer, charsInBuffer);
-        charsInBuffer = contentReplacer.getCharsAfterReplacement();
-        if (contentReplacer.isLastMatchIncomplete())
-            incompleteMatchStartIndex = contentReplacer.getIncompleteMatchStartIndex();
-        bufferCheckedForReplacement = true;
     }
 
     @Override
