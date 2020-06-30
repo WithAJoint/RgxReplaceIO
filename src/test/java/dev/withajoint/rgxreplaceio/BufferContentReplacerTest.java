@@ -112,6 +112,18 @@ public class BufferContentReplacerTest {
         assert contentReplacer.getIncompleteMatchStartIndex() == expectedStartIndex;
     }
 
+    @Test
+    public void incompleteMatchState_partialMatchAtEndOfBufferNotMatchingYet_returnStartingIndex() {
+        char[] buffer = {'n', 'o', ' ', '3', '3', '3', '-', '4'};
+        int expectedStartIndex = 3;
+        BufferContentReplacer contentReplacer = new BufferContentReplacer("\\d{3}-\\d{7}\\b", "###-#######");
+
+        contentReplacer.replaceMatchesIfAny(buffer, buffer.length);
+
+        assert contentReplacer.isLastMatchIncomplete();
+        assert contentReplacer.getIncompleteMatchStartIndex() == expectedStartIndex;
+    }
+
 
     private void assertReplacement(char[] expectedBuffer, int expectedCharsInBuffer, char[] bufferReplaced, int charsInBuffer) {
         assert expectedBuffer.length == bufferReplaced.length;
