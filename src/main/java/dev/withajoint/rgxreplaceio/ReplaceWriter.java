@@ -3,19 +3,40 @@ package dev.withajoint.rgxreplaceio;
 import java.io.FilterWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.regex.Pattern;
 
-public class ReplaceWriter  extends FilterWriter {
+public class ReplaceWriter extends FilterWriter {
 
-    private String replaceWith;
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    private char[] buffer;
+    private BufferContentReplacer contentReplacer;
+    private int nextChar;
+    private int incompleteMatchStartIndex;
 
     public ReplaceWriter(Writer out, String regex, String replaceWith) {
+        this(out, regex, replaceWith, DEFAULT_BUFFER_SIZE);
+    }
+
+    public ReplaceWriter(Writer out, String regex, String replaceWith, int bufferSize) {
         super(out);
+        if (bufferSize <= 0)
+            throw new IllegalArgumentException("Buffer size <= 0");
+        buffer = new char[bufferSize];
+        contentReplacer = new BufferContentReplacer(regex, replaceWith);
+        nextChar = 0;
+        incompleteMatchStartIndex = -1;
     }
 
     @Override
     public void write(int c) throws IOException {
-        super.write(c);
+        if (nextChar >= buffer.length)
+            writeOnUnderlyingStream();
+        buffer[nextChar++] = (char) c;
+    }
+
+    private void writeOnUnderlyingStream() throws IOException {
+        out.write(buffer, 0, nextChar);
+        nextChar = 0;
     }
 
     @Override
@@ -30,7 +51,14 @@ public class ReplaceWriter  extends FilterWriter {
 
     @Override
     public void flush() throws IOException {
-        super.flush();
+        replaceMatchingContent();
+        writeOnUnderlyingStream();
+        out.flush();
+    }
+
+    private void replaceMatchingContent() {
+        buffer = contentReplacer.replaceMatchesIfAny(buffer, nextChar);
+        nextChar = contentReplacer.getCharsAfterReplacement();
     }
 
     @Override
