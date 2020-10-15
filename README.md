@@ -19,5 +19,4 @@ Then use it as a normal stream while replacements automatically take place under
 Those streams are not thread-safe at all! Do not read any stream from more than one thread.
 
 ## TODO
-+ develop ReplaceWriter
-+ develop ReplaceInputStream and ReplaceOutputStream
++ implement a regex engine to overcome limitations given by java.util.regex.Matcher
